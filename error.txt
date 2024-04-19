@@ -1,0 +1,13 @@
+(node:37510) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Vercel CLI 34.1.1
+Retrieving project…
+Deploying mmms-projects-3ef35eaf/emotions-tracker
+Uploading [--------------------] (0.0B/288B)
+Uploading [====================] (288.0B/288B)
+Inspect: https://vercel.com/mmms-projects-3ef35eaf/emotions-tracker/KxbP41nbT9qqxcfo3isBWbwzKcDE [2s]
+Preview: https://emotions-tracker-7stoa625x-mmms-projects-3ef35eaf.vercel.app [2s]
+Queued
+Building
+Completing
+To deploy to production (emotions-tracker.vercel.app), run `vercel --prod`
