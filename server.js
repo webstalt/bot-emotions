@@ -7,6 +7,7 @@ const app = express();
 app.use(bodyParser.json());
 
 app.post('/bot', (req, res) => {
+  console.log('Received a webhook:', req.body);
   bot.handleUpdate(req.body, res);
   res.status(200).send('OK');
 });
