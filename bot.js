@@ -15,32 +15,43 @@ let emotions;
 dotenv.config();
   
 const bot = new Telegraf(process.env.bot_token);
-bot.start((ctx) => ctx.reply('Welcome!'));
+
+bot.start((ctx) => {
+  userChoices[ctx.from.id] = [];
+  ctx.reply(HELLO_TEXT);
+  ctx.reply("Выбери команду:", {
+    reply_markup: {
+      keyboard: [
+        [{ text: '/newcheckup' }, { text: '/stats' }],
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: true
+    }
+  });
+});
+
+bot.command('newcheckup', (ctx) => {
+  sendCategoryMenu(ctx.from.id);
+});
 
 let userChoices = {};
 
-bot.onText(/\/start/, (msg) => {
-  const chatId = msg.chat.id;
+const options = {
+  reply_markup: JSON.stringify({
+    keyboard: [
+      [{ text: '/newcheckup' }, { text: '/stats' }]
+    ],
+    resize_keyboard: true,  // Делает клавиатуру меньше
+    one_time_keyboard: true // Скрывает клавиатуру после использования
+  })
+};
+
+bot.command('start', (ctx) => {
+  const chatId = ctx.from.i
   userChoices[chatId] = []; // Инициализация выбора для пользователя
-  bot.sendMessage(chatId, HELLO_TEXT);
-  
-  const options = {
-    reply_markup: JSON.stringify({
-      keyboard: [
-        [{ text: '/newcheckup' }, { text: '/stats' }]
-      ],
-      resize_keyboard: true,  // Делает клавиатуру меньше
-      one_time_keyboard: true // Скрывает клавиатуру после использования
-    })
-  };
+  bot.telegram.sendMessage(chatId, HELLO_TEXT, options);
 
-  bot.sendMessage(chatId, "Выбери команду:", options);
-});
-
-
-bot.onText(/\/newcheckup/, (msg) => {
-  const chatId = msg.chat.id;
-  sendCategoryMenu(chatId);
+  bot.telegram.sendMessage(chatId, "Выбери команду:");
 });
 
 function sendCategoryMenu(chatId) {
@@ -52,7 +63,7 @@ function sendCategoryMenu(chatId) {
   if (userChoices?.[chatId]?.length > 0) {
     keyboard.push([{ text: 'Завершить ✅', callback_data: 'finish' }]);
   }
-  bot.sendMessage(chatId, 'Выбери категорию эмоций:', {
+  bot.telegram.sendMessage(chatId, 'Выбери категорию эмоций:', {
     reply_markup: { inline_keyboard: keyboard }
   });
 }
@@ -64,7 +75,7 @@ function sendEmotionSelectionMenu(chatId, category) {
   if (userChoices?.[chatId]?.length > 0) {
     keyboard.push([{ text: 'Завершить ✅', callback_data: 'finish' }]);
   }
-  bot.sendMessage(chatId, `Выбери эмоцию из категории ${category}:`, {
+  bot.telegram.sendMessage(chatId, `Выбери эмоцию из категории ${category}:`, {
     reply_markup: { inline_keyboard: keyboard }
   });
 }
@@ -89,16 +100,14 @@ function saveEmotions(chatId, emotions) {
   });
 }
 
-bot.on('callback_query', (callbackQuery) => {
-  const message = callbackQuery.message;
-  const chatId = message.chat.id;
+bot.on('callback_query', (ctx) => {
+  const message = ctx.update.callback_query.message;
+  const chatId = ctx.from.id;
 
   userChoices[chatId] = userChoices[chatId] || [];
-
-  const data = callbackQuery.data;
-
+  const data = ctx.update.callback_query.data;
+ 
   const [prefix, value] = data.split(':');
-
   if (prefix === 'category') {
     // Это выбор категории, переходим к выбору эмоций
     sendEmotionSelectionMenu(chatId, value);
@@ -115,7 +124,7 @@ bot.on('callback_query', (callbackQuery) => {
     // Логирование или отправка данных с использованием safeStringify
     console.log(safeStringify(userChoices[chatId]));
     const currentChoices = userChoices[chatId];
-    bot.sendMessage(chatId, getCurrentChoicesConfirmText(currentChoices));
+    bot.telegram.sendMessage(chatId, getCurrentChoicesConfirmText(currentChoices));
   } else if (data === 'backToCategories') {
     sendCategoryMenu(chatId);
   } else if (data === 'finish') {
@@ -123,21 +132,21 @@ bot.on('callback_query', (callbackQuery) => {
   }
 });
 
-function finish(msg) {
-  const chatId = msg.chat.id;
+function finish(ctx) {
+  const chatId = ctx.from.id;
   if (!userChoices?.[chatId]?.length) {
-    bot.sendMessage(chatId, `Нечего сохранять.
+    bot.telegram.sendMessage(chatId, `Нечего сохранять.
 /newcheckup`);
     return;
   };
   addEmotionSelection(chatId, userChoices[chatId]);
   saveEmotions(chatId, userChoices[chatId]);
-  bot.sendMessage(chatId, `Твой выбор сохранен: ${userChoices[chatId].join(', ')}`);
+  bot.telegram.sendMessage(chatId, `Твой выбор сохранен: ${userChoices[chatId].join(', ')}`, options);
   delete userChoices[chatId];
 
   checkUserSettings(chatId, (err, settingsExist, timezoneOffset, reminderInterval) => {
     if (err) {
-      bot.sendMessage(chatId, "Произошла ошибка, попробуйте еще раз.");
+      bot.telegram.sendMessage(chatId, "Произошла ошибка, попробуйте еще раз.", options);
       return;
     }
     if (settingsExist) {
@@ -166,31 +175,31 @@ function checkUserSettings(chatId, callback) {
 
 
 function askForTimezone(chatId) {
-  bot.sendMessage(chatId, ASK_FOR_TIMEZONE_TEXT);
+  bot.telegram.sendMessage(chatId, ASK_FOR_TIMEZONE_TEXT);
   bot.once("message", (msg) => {
     if (isValidTimezone(msg.text)) {
       const timezoneOffset = parseInt(msg.text);
       askForReminderInterval(chatId, timezoneOffset);
     } else if (msg.text === '-') {
-      bot.sendMessage(chatId, "Хорошо, напоминаний не будет :)");
+      bot.telegram.sendMessage(chatId, "Хорошо, напоминаний не будет :)", options);
     } else {
-      bot.sendMessage(chatId, "Пожалуйста, введи корректное значение временной зоны, например '+3' или '-5'");
+      bot.telegram.sendMessage(chatId, "Пожалуйста, введи корректное значение временной зоны, например '+3' или '-5'");
     }
   });
 }
 
 function askForReminderInterval(chatId, timezoneOffset) {
-  bot.sendMessage(chatId, "Как часто ты хочешь получать напоминания? Введи интервал в часах (например, '4' для напоминаний каждые 4 часа).");
+  bot.telegram.sendMessage(chatId, "Как часто ты хочешь получать напоминания? Введи интервал в часах (например, '4' для напоминаний каждые 4 часа).");
   bot.once("message", (msg) => {
     const reminderInterval = parseInt(msg.text);
     saveUserSettings(chatId, timezoneOffset, reminderInterval);
-    bot.sendMessage(chatId, "Спасибо! Твои настройки сохранены.");
+    bot.telegram.sendMessage(chatId, "Спасибо! Твои настройки сохранены.", options);
     scheduleNextReminder(chatId, timezoneOffset, reminderInterval);
   });
 }
 
-bot.onText(/\/complete/, (msg) => {
-  finish(msg);
+bot.command('complete', (ctx) => {
+  finish(ctx);
 });
 
 function saveUserSettings(userId, timezoneOffset, reminderInterval) {
@@ -204,18 +213,18 @@ function saveUserSettings(userId, timezoneOffset, reminderInterval) {
   });
 }
 
-bot.onText(/\/stats/, (msg) => {
-  const chatId = msg.chat.id;
+bot.command('stats', (ctx) => {
+  const chatId = ctx.from.id;
 
   db.all("SELECT * FROM emotions WHERE user_id = ?", [chatId], (err, rows) => {
     if (err) {
-      bot.sendMessage(chatId, "Произошла ошибка при извлечении данных.");
+      bot.telegram.sendMessage(chatId, "Произошла ошибка при извлечении данных.", options);
       console.error(err);
       return;
     }
     
     if (rows.length === 0) {
-      bot.sendMessage(chatId, "Записи не найдены.");
+      bot.telegram.sendMessage(chatId, "Записи не найдены.", options);
       return;
     }
     let response = "Твои сохраненные чекапы:\n\n";
@@ -226,7 +235,7 @@ bot.onText(/\/stats/, (msg) => {
       }
       response += `${formatDate(row.timestamp)}:  ${JSON.parse(row.emotions).join(', ')}\n`;
     });
-    bot.sendMessage(chatId, response);
+    bot.telegram.sendMessage(chatId, response, options);
   });
 });
 
@@ -259,10 +268,16 @@ function scheduleNextReminder(chatId, timezoneOffset, reminderInterval) {
 
   const delay = nextReminder.getTime() - now.getTime();
   setTimeout(() => {
-    bot.sendMessage(chatId, "Что ты сейчас испытываешь?");
+    bot.telegram.sendMessage(chatId, "Что ты сейчас испытываешь?");
     scheduleNextReminder(chatId, timezoneOffset, reminderInterval);
   }, delay);
 }
 
+// Запускаем бота
+bot.launch().then(() => {
+  console.log("Бот успешно запущен");
+}).catch((error) => {
+  console.error("Ошибка при запуске бота:", error);
+});
 
-export default bot;
+export default bot;  // Экспорт экземпляра бота для использования в других файлах

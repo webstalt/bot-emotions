@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "start": "node server.js",
-    "start:dev": "node bot.js"
+    "start:dev": "node bot.js",
+    "dev": "nodemon --watch '*.js' server.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
@@ -16,5 +17,8 @@
     "node-telegram-bot-api": "^0.65.1",
     "sqlite3": "^5.1.7",
     "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }
