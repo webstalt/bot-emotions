@@ -6,6 +6,10 @@ const app = express();
 
 app.use(bodyParser.json());
 
+app.get('/', (req, res) => {
+  res.send('Welcome to my Telegram Bot Server!');
+});
+
 app.post('/bot', (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
 
