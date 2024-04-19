@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { db, addEmotionSelection, safeStringify } from './database.js';
 import { HELLO_TEXT, getCurrentChoicesConfirmText, ASK_FOR_TIMEZONE_TEXT } from './texts.js';
 import { formatDate, isValidTimezone } from './utils.js';
+
 import('./emotions.json', { assert: { type: 'json' } })
   .then((module) => {
     emotions = module.default;
@@ -13,7 +14,7 @@ import('./emotions.json', { assert: { type: 'json' } })
 let emotions;
 dotenv.config();
   
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Telegraf(process.env.bot_token);
 bot.start((ctx) => ctx.reply('Welcome!'));
 
 let userChoices = {};
