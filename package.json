@@ -5,9 +5,9 @@
   "main": "bot.js",
   "license": "MIT",
   "scripts": {
-    "start": "node server.js",
-    "start:dev": "node bot.js",
-    "dev": "nodemon --watch '*.js' server.js"
+    "start": "node index.js",
+    "start:dev": "node index.js",
+    "dev": "nodemon --watch '*.js' index.js"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
